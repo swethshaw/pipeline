@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pipeline-frontend-svc
+  namespace: pipeline-app
+  labels:
+    app: pipeline-frontend
+spec:
+  selector:
+    app: pipeline-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      nodePort: 30080        # access via minikube ip:30080
+  type: NodePort
+---
+# ServiceMonitor tells Prometheus Operator to scrape this service
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: pipeline-frontend-monitor
+  namespace: pipeline-app
+  labels:
+    release: prometheus        # must match Helm prometheus release label
+spec:
+  selector:
+    matchLabels:
+      app: pipeline-frontend
+  endpoints:
+    - port: http
+      path: /nginx_status
+      interval: 15s
+  namespaceSelector:
+    matchNames:
+      - pipeline-app

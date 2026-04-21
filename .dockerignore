@@ -1,0 +1,2 @@
+echo "frontend/node_modules" > .dockerignore
+echo "frontend/build" >> .dockerignore

@@ -1,0 +1,78 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: pipeline-frontend-alerts
+  namespace: pipeline-app
+  labels:
+    release: prometheus
+spec:
+  groups:
+    - name: pipeline-frontend.rules
+      interval: 15s
+      rules:
+        # ── Availability ────────────────────────────────────────────────────
+        - alert: PipelineFrontendDown
+          expr: kube_deployment_status_replicas_available{deployment="pipeline-frontend", namespace="pipeline-app"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "All frontend pods are down"
+            description: "Deployment pipeline-frontend has 0 available replicas for more than 1 minute."
+
+        - alert: PipelineFrontendLowReplicas
+          expr: kube_deployment_status_replicas_available{deployment="pipeline-frontend", namespace="pipeline-app"} < 2
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Frontend running on fewer than 2 replicas"
+            description: "Only {{ $value }} replicas available – possible node failure."
+
+        # ── CPU ─────────────────────────────────────────────────────────────
+        - alert: PipelineFrontendHighCPU
+          expr: |
+            100 * sum(rate(container_cpu_usage_seconds_total{namespace="pipeline-app", container="frontend"}[2m]))
+            / sum(kube_pod_container_resource_requests{namespace="pipeline-app", container="frontend", resource="cpu"})
+            > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU utilisation on pipeline-frontend"
+            description: "CPU usage is {{ $value | printf \"%.1f\" }}% – approaching HPA scale limit."
+
+        # ── Memory ──────────────────────────────────────────────────────────
+        - alert: PipelineFrontendHighMemory
+          expr: |
+            100 * sum(container_memory_working_set_bytes{namespace="pipeline-app", container="frontend"})
+            / sum(kube_pod_container_resource_requests{namespace="pipeline-app", container="frontend", resource="memory"})
+            > 85
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory utilisation on pipeline-frontend"
+            description: "Memory usage is {{ $value | printf \"%.1f\" }}%."
+
+        # ── Pod restarts ─────────────────────────────────────────────────────
+        - alert: PipelineFrontendPodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total{namespace="pipeline-app"}[5m]) > 0.05
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Pod is crash-looping"
+            description: "Pod {{ $labels.pod }} is restarting frequently."
+
+        # ── HPA at max ───────────────────────────────────────────────────────
+        - alert: PipelineFrontendHPAMaxed
+          expr: |
+            kube_horizontalpodautoscaler_status_current_replicas{namespace="pipeline-app"}
+            >= kube_horizontalpodautoscaler_spec_max_replicas{namespace="pipeline-app"}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "HPA has reached maximum replicas"
+            description: "The autoscaler is at max ({{ $value }} replicas) – consider raising maxReplicas."

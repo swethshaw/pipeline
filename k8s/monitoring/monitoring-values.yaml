@@ -1,0 +1,90 @@
+# kube-prometheus-stack Helm values
+# Install: helm upgrade --install prometheus prometheus-community/kube-prometheus-stack \
+#           -n monitoring --values monitoring-values.yaml
+
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    serviceMonitorSelector: {}
+    retention: 15d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1Gi
+
+grafana:
+  enabled: true
+  adminPassword: "admin123"
+  
+  # Disable the chart's manual default to avoid conflict with the sidecar
+  defaultDatasourceEnabled: false
+
+  resources:
+    limits:
+      cpu: 200m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+    datasources:
+      enabled: true
+      # This allows the sidecar to create the default link to Prometheus automatically
+      defaultDatasourceEnabled: true 
+      resources:
+        limits:
+          cpu: 100m
+          memory: 256Mi
+
+  service:
+    type: NodePort
+    nodePort: 30300
+
+  persistence:
+    enabled: false
+
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s:%(http_port)s/"
+    auth.anonymous:
+      enabled: false
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: standard
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+
+nodeExporter:
+  enabled: true
+
+kubeStateMetrics:
+  enabled: true

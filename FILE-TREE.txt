@@ -1,0 +1,49 @@
+├── app
+│   └── Dockerfile
+├── FILE-TREE.txt
+├── frontend
+│   ├── package.json
+│   ├── public
+│   │   ├── favicon.ico
+│   │   ├── index.html
+│   │   ├── logo192.png
+│   │   ├── logo512.png
+│   │   ├── manifest.json
+│   │   └── robots.txt
+│   ├── README.md
+│   └── src
+│       ├── App.js
+│       ├── components
+│       │   ├── draggableNode.js
+│       │   ├── submit.js
+│       │   ├── toolbar.js
+│       │   └── ui.js
+│       ├── index.css
+│       ├── index.js
+│       ├── nodes
+│       │   ├── BaseNode.js
+│       │   ├── extensionNodes.js
+│       │   ├── inputNode.js
+│       │   ├── llmNode.js
+│       │   ├── outputNode.js
+│       │   └── textNode.js
+│       └── store.js
+├── k8s
+│   ├── base
+│   │   ├── deployment.yaml
+│   │   ├── namespace.yaml
+│   │   └── service.yaml
+│   ├── hpa
+│   │   └── hpa.yaml
+│   └── monitoring
+│       ├── alert-rules.yaml
+│       ├── grafana-dashboard-cm.yaml
+│       └── monitoring-values.yaml
+├── nginx.conf
+├── README.md
+├── scripts
+│   ├── load-test.sh
+│   ├── setup.sh
+│   └── teardown.sh
+└── {app,k8s
+    └── {base,monitoring,hpa,pipeline},scripts}

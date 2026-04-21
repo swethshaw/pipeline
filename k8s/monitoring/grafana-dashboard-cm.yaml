@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pipeline-grafana-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"    # picked up by Grafana sidecar
+data:
+  pipeline-dashboard.json: |
+    {
+      "title": "Pipeline Frontend - Overview",
+      "uid": "pipeline-frontend-001",
+      "refresh": "10s",
+      "time": { "from": "now-1h", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "title": "🟢 Pod Count (Replicas)",
+          "type": "stat",
+          "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+          "targets": [{
+            "expr": "kube_deployment_status_replicas_available{deployment=\"pipeline-frontend\", namespace=\"pipeline-app\"}",
+            "legendFormat": "Available Pods"
+          }]
+        },
+        {
+          "id": 2,
+          "title": "📈 CPU Usage (millicores)",
+          "type": "timeseries",
+          "gridPos": { "x": 6, "y": 0, "w": 9, "h": 8 },
+          "targets": [{
+            "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"pipeline-app\", container=\"frontend\"}[2m])) by (pod) * 1000",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 3,
+          "title": "🧠 Memory Usage (MB)",
+          "type": "timeseries",
+          "gridPos": { "x": 15, "y": 0, "w": 9, "h": 8 },
+          "targets": [{
+            "expr": "sum(container_memory_working_set_bytes{namespace=\"pipeline-app\", container=\"frontend\"}) by (pod) / 1024 / 1024",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 4,
+          "title": "⚡ HPA - Desired vs Current Replicas",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+          "targets": [
+            {
+              "expr": "kube_horizontalpodautoscaler_status_current_replicas{namespace=\"pipeline-app\"}",
+              "legendFormat": "Current Replicas"
+            },
+            {
+              "expr": "kube_horizontalpodautoscaler_status_desired_replicas{namespace=\"pipeline-app\"}",
+              "legendFormat": "Desired Replicas"
+            },
+            {
+              "expr": "kube_horizontalpodautoscaler_spec_min_replicas{namespace=\"pipeline-app\"}",
+              "legendFormat": "Min Replicas"
+            },
+            {
+              "expr": "kube_horizontalpodautoscaler_spec_max_replicas{namespace=\"pipeline-app\"}",
+              "legendFormat": "Max Replicas"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "title": "🌐 Nginx Active Connections",
+          "type": "timeseries",
+          "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "sum(nginx_connections_active{namespace=\"pipeline-app\"}) by (pod)",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 6,
+          "title": "🔄 Nginx Requests / sec",
+          "type": "timeseries",
+          "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+          "targets": [{
+            "expr": "rate(nginx_http_requests_total{namespace=\"pipeline-app\"}[1m])",
+            "legendFormat": "{{pod}}"
+          }]
+        },
+        {
+          "id": 7,
+          "title": "💡 Pod Restarts",
+          "type": "stat",
+          "gridPos": { "x": 12, "y": 16, "w": 6, "h": 4 },
+          "targets": [{
+            "expr": "sum(kube_pod_container_status_restarts_total{namespace=\"pipeline-app\"})",
+            "legendFormat": "Total Restarts"
+          }]
+        },
+        {
+          "id": 8,
+          "title": "📊 CPU Utilisation % (HPA trigger at 50%)",
+          "type": "gauge",
+          "gridPos": { "x": 18, "y": 16, "w": 6, "h": 4 },
+          "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "minVizValue": 0, "maxVizValue": 100 },
+          "targets": [{
+            "expr": "100 * sum(rate(container_cpu_usage_seconds_total{namespace=\"pipeline-app\", container=\"frontend\"}[2m])) / sum(kube_pod_container_resource_requests{namespace=\"pipeline-app\", container=\"frontend\", resource=\"cpu\"})",
+            "legendFormat": "CPU %"
+          }]
+        }
+      ]
+    }
