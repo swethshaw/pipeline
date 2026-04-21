@@ -4,11 +4,14 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 
 # Install dependencies first (layer cache)
-COPY frontend/package.json frontend/package-lock.json* ./
+# 🔧 FIXED: Removed 'frontend/' because files are in the root folder
+COPY package.json package-lock.json* ./
 RUN npm install --legacy-peer-deps
+
+# (Optional) Keeping your manual ajv install if it solves a specific dependency conflict
 RUN npm install ajv@^8.12.0 ajv-keywords@^5.1.0
-# Copy source and build
-COPY frontend/ .
+
+COPY . .
 RUN npm run build
 
 # ─── Stage 2: Serve with Nginx ─────────────────────────────────────────────────
